@@ -1,4 +1,61 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+const NOME_TIME_JOGADOR = 'Seu time'
+const GOALS_PER_GOAL = 10
+const PONTOS_POMO = 150
+const MEDIA_GOLS_BASE = 12
+const FATOR_DIFERENCA_ATAQUE = 0.35
+const FATOR_CHANCE_APANHADOR = 0.12
+const CHANCE_POMO_MINIMA = 0.05
+const CHANCE_POMO_MAXIMA = 0.95
+const PENALIDADE_POMO_AUROR = 0.05
+const LAMBDA_MINIMA = 2
+const BONUS_GOLS_MANDANTE = 1
+const BONUS_POMO_MANDANTE = 0.02
+const PESO_DEFESA_GOLEIRO = 0.6
+const PESO_DEFESA_BATEDORES = 0.4
+const DURACAO_MINIMA_PARTIDA = 5
+const VARIACAO_DURACAO_PARTIDA = 16
+const INTERVALO_PARTIDA_MS = 1000
+const MODIFICADORES_TATICA = {
+  Defensiva: {
+    golsProprios: -1.5,
+    golsAdversario: -4.5,
+    chancePomo: 0.09,
+  },
+  Equilibrada: {
+    golsProprios: 0,
+    golsAdversario: 0,
+    chancePomo: 0,
+  },
+  Ofensiva: {
+    golsProprios: 3,
+    golsAdversario: 3.5,
+    chancePomo: -0.07,
+  },
+}
+
+// A curva mantém a ordem de força original das quatro casas.
+const FORCAS_RIVAIS = {
+  Trouxa: {
+    'Grifinória': 82,
+    Sonserina: 75,
+    Corvinal: 68,
+    'Lufa-Lufa': 62,
+  },
+  Bruxo: {
+    'Grifinória': 91,
+    Sonserina: 83,
+    Corvinal: 75,
+    'Lufa-Lufa': 68,
+  },
+  Auror: {
+    'Grifinória': 96,
+    Sonserina: 89,
+    Corvinal: 82,
+    'Lufa-Lufa': 75,
+  },
+}
 
 const adversarios = [
   { nome: 'Grifinória', forca: 82, ataque: 86, defesa: 82, seeker: 95 },
@@ -21,6 +78,82 @@ const apanhadoresCasas = {
   'Lufa-Lufa': 'Cedrico Diggory',
 }
 
+function gerarCalendario(equipes) {
+  const times = equipes.slice()
+  times[times.length] = null
+
+  const ida = []
+
+  for (let rodada = 0; rodada < 5; rodada++) {
+    const jogos = []
+
+    for (let i = 0; i < times.length / 2; i++) {
+      const timeA = times[i]
+      const timeB = times[times.length - 1 - i]
+
+      if (timeA !== null && timeB !== null) {
+        let timeCasa = timeA
+        let timeVisitante = timeB
+
+        if ((rodada + i) % 2 !== 0) {
+          timeCasa = timeB
+          timeVisitante = timeA
+        }
+
+        jogos[jogos.length] = {
+          timeCasa: timeCasa,
+          timeVisitante: timeVisitante,
+        }
+      }
+    }
+
+    ida[ida.length] = jogos
+
+    const ultimoTime = times[times.length - 1]
+
+    for (let i = times.length - 1; i > 1; i--) {
+      times[i] = times[i - 1]
+    }
+
+    times[1] = ultimoTime
+  }
+
+  const calendario = []
+  let numeroRodada = 0
+
+  for (let rodada = 0; rodada < ida.length; rodada++) {
+    const jogos = []
+
+    for (let i = 0; i < ida[rodada].length; i++) {
+      jogos[i] = {
+        numero: numeroRodada * 2 + i + 1,
+        timeCasa: ida[rodada][i].timeCasa,
+        timeVisitante: ida[rodada][i].timeVisitante,
+      }
+    }
+
+    calendario[calendario.length] = { jogos: jogos }
+    numeroRodada = numeroRodada + 1
+  }
+
+  for (let rodada = ida.length - 1; rodada >= 0; rodada--) {
+    const jogos = []
+
+    for (let i = 0; i < ida[rodada].length; i++) {
+      jogos[i] = {
+        numero: numeroRodada * 2 + i + 1,
+        timeCasa: ida[rodada][i].timeVisitante,
+        timeVisitante: ida[rodada][i].timeCasa,
+      }
+    }
+
+    calendario[calendario.length] = { jogos: jogos }
+    numeroRodada = numeroRodada + 1
+  }
+
+  return calendario
+}
+
 function TournamentSimulation({
   mediaTime,
   tatica,
@@ -30,7 +163,7 @@ function TournamentSimulation({
   onHome,
 }) {
   const equipes = []
-  equipes[0] = { nome: 'Seu time', forca: mediaTime }
+  equipes[0] = { nome: NOME_TIME_JOGADOR, forca: mediaTime }
   equipes[1] = adversarios[0]
   equipes[2] = adversarios[1]
   equipes[3] = adversarios[2]
@@ -50,6 +183,7 @@ function TournamentSimulation({
   const [pontosMaquinaVisitante, setPontosMaquinaVisitante] = useState(0)
   const [eventos, setEventos] = useState([])
   const [partidaTerminada, setPartidaTerminada] = useState(false)
+  const [cronometro, setCronometro] = useState(null)
   const [pontosTimes, setPontosTimes] = useState(() => {
     const pontosIniciais = []
 
@@ -62,63 +196,51 @@ function TournamentSimulation({
 
     return pontosIniciais
   })
-  const [campeao, setCampeao] = useState('')
+  let campeao = ''
 
-  const confrontos = []
-  let numeroConfronto = 0
+  const confrontos = gerarCalendario(equipes)
 
-  for (let i = 0; i < adversarios.length; i++) {
-    confrontos[numeroConfronto] = {
-      numero: numeroConfronto + 1,
-      timeCasa: equipes[0],
-      timeVisitante: adversarios[i],
+  useEffect(() => {
+    if (cronometro === null) {
+      return
     }
-    numeroConfronto = numeroConfronto + 1
 
-    confrontos[numeroConfronto] = {
-      numero: numeroConfronto + 1,
-      timeCasa: adversarios[i],
-      timeVisitante: equipes[0],
+    return () => clearInterval(cronometro)
+  }, [cronometro])
+
+  if (
+    partidaTerminada &&
+    partidaAtual === confrontos.length - 1
+  ) {
+    let maiorPontuacao = -1
+
+    for (let i = 0; i < pontosTimes.length; i++) {
+      if (pontosTimes[i].pontos > maiorPontuacao) {
+        maiorPontuacao = pontosTimes[i].pontos
+        campeao = pontosTimes[i].nome
+      }
     }
-    numeroConfronto = numeroConfronto + 1
   }
 
   function obterTimeNaCurva(time) {
-    if (time.nome === 'Seu time') {
+    if (time.nome === NOME_TIME_JOGADOR) {
       return time
     }
 
-    let forcas = [68, 75, 83, 91]
-
-    if (dificuldade === 'Trouxa') {
-      forcas = [62, 68, 75, 82]
-    }
-
-    if (dificuldade === 'Auror') {
-      forcas = [75, 82, 89, 96]
-    }
-
-    let indiceRival = 0
-
-    for (let i = 0; i < adversarios.length; i++) {
-      if (adversarios[i].nome === time.nome) {
-        indiceRival = i
-      }
-    }
-
-    const forcaRival = forcas[indiceRival]
+    const forcaRival = FORCAS_RIVAIS[dificuldade][time.nome]
+    const ajusteForca = forcaRival - time.forca
 
     return {
       nome: time.nome,
       forca: forcaRival,
-      ataque: forcaRival,
-      defesa: forcaRival,
-      seeker: forcaRival,
+      ataque: time.ataque + ajusteForca,
+      defesa: time.defesa + ajusteForca,
+      seeker: time.seeker + ajusteForca,
     }
   }
 
   function obterArtilheiros(time) {
-    if (time.nome === 'Seu time') {
+    if (time.nome === NOME_TIME_JOGADOR) {
       const artilheirosDoTime = []
 
       if (jogadores) {
@@ -139,7 +261,11 @@ function TournamentSimulation({
   }
 
   function obterApanhador(time) {
-    if (time.nome === 'Seu time' && jogadores && jogadores[6]) {
+    if (
+      time.nome === NOME_TIME_JOGADOR &&
+      jogadores &&
+      jogadores[6]
+    ) {
       return jogadores[6].nome
     }
 
@@ -156,7 +282,7 @@ function TournamentSimulation({
   }
 
   function obterAtaque(time) {
-    if (time.nome === 'Seu time' && jogadores) {
+    if (time.nome === NOME_TIME_JOGADOR && jogadores) {
       let somaAtaque = 0
       let quantidade = 0
 
@@ -177,7 +303,7 @@ function TournamentSimulation({
   }
 
   function obterDefesa(time) {
-    if (time.nome === 'Seu time' && jogadores) {
+    if (time.nome === NOME_TIME_JOGADOR && jogadores) {
       let defesaGoleiro = 0
       let somaBatedores = 0
       let quantidadeBatedores = 0
@@ -202,15 +328,19 @@ function TournamentSimulation({
           somaBatedores / quantidadeBatedores
       }
 
-      return defesaGoleiro * 0.6 +
-        defesaBatedores * 0.4
+      return defesaGoleiro * PESO_DEFESA_GOLEIRO +
+        defesaBatedores * PESO_DEFESA_BATEDORES
     }
 
     return time.defesa
   }
 
   function obterForcaBusca(time) {
-    if (time.nome === 'Seu time' && jogadores && jogadores[6]) {
+    if (
+      time.nome === NOME_TIME_JOGADOR &&
+      jogadores &&
+      jogadores[6]
+    ) {
       return calcularMediaJogador(jogadores[6])
     }
 
@@ -224,44 +354,38 @@ function TournamentSimulation({
     const diferenca =
       buscaCasa - buscaVisitante
     let probabilidadeCasa =
-      1 / (1 + Math.exp(-diferenca * 0.12))
+      1 / (1 + Math.exp(-diferenca * FATOR_CHANCE_APANHADOR))
 
-    if (timeCasa.nome === 'Seu time') {
-      if (tatica === 'Defensiva') {
-        probabilidadeCasa = probabilidadeCasa + 0.09
-      }
-
-      if (tatica === 'Ofensiva') {
-        probabilidadeCasa = probabilidadeCasa - 0.07
-      }
-
-      probabilidadeCasa = probabilidadeCasa + 0.02
+    if (timeCasa.nome === NOME_TIME_JOGADOR) {
+      probabilidadeCasa =
+        probabilidadeCasa +
+        MODIFICADORES_TATICA[tatica].chancePomo
+      probabilidadeCasa =
+        probabilidadeCasa + BONUS_POMO_MANDANTE
 
       if (dificuldade === 'Auror') {
-        probabilidadeCasa = probabilidadeCasa - 0.05
+        probabilidadeCasa = probabilidadeCasa - PENALIDADE_POMO_AUROR
       }
     }
 
-    if (timeVisitante.nome === 'Seu time') {
-      if (tatica === 'Defensiva') {
-        probabilidadeCasa = probabilidadeCasa - 0.09
-      }
-
-      if (tatica === 'Ofensiva') {
-        probabilidadeCasa = probabilidadeCasa + 0.07
-      }
+    if (timeVisitante.nome === NOME_TIME_JOGADOR) {
+      probabilidadeCasa =
+        probabilidadeCasa -
+        MODIFICADORES_TATICA[tatica].chancePomo
+      probabilidadeCasa =
+        probabilidadeCasa - BONUS_POMO_MANDANTE
 
       if (dificuldade === 'Auror') {
-        probabilidadeCasa = probabilidadeCasa + 0.05
+        probabilidadeCasa = probabilidadeCasa + PENALIDADE_POMO_AUROR
       }
     }
 
-    if (probabilidadeCasa < 0.05) {
-      probabilidadeCasa = 0.05
+    if (probabilidadeCasa < CHANCE_POMO_MINIMA) {
+      probabilidadeCasa = CHANCE_POMO_MINIMA
     }
 
-    if (probabilidadeCasa > 0.95) {
-      probabilidadeCasa = 0.95
+    if (probabilidadeCasa > CHANCE_POMO_MAXIMA) {
+      probabilidadeCasa = CHANCE_POMO_MAXIMA
     }
 
     const sorteSorteio = Math.random()
@@ -273,39 +397,29 @@ function TournamentSimulation({
     return timeVisitante.nome
   }
 
-  function calcularLambda(timeCasa, timeVisitante) {
+  function calcularLambda(timeAtaque, timeDefesa, timeCasa) {
     let lambda =
-      12 +
-      (obterAtaque(timeCasa) -
-        obterDefesa(timeVisitante)) *
-        0.35
+      MEDIA_GOLS_BASE +
+      (obterAtaque(timeAtaque) -
+        obterDefesa(timeDefesa)) *
+        FATOR_DIFERENCA_ATAQUE
 
-    if (timeCasa.nome === 'Seu time') {
-      if (tatica === 'Defensiva') {
-        lambda = lambda - 1.5
-      }
+    if (timeAtaque.nome === NOME_TIME_JOGADOR) {
+      lambda =
+        lambda + MODIFICADORES_TATICA[tatica].golsProprios
 
-      if (tatica === 'Ofensiva') {
-        lambda = lambda + 3
-      }
-
-      if (confrontos[partidaAtual].timeCasa.nome === 'Seu time') {
-        lambda = lambda + 1
+      if (timeCasa.nome === NOME_TIME_JOGADOR) {
+        lambda = lambda + BONUS_GOLS_MANDANTE
       }
     }
 
-    if (timeVisitante.nome === 'Seu time') {
-      if (tatica === 'Defensiva') {
-        lambda = lambda - 4.5
-      }
-
-      if (tatica === 'Ofensiva') {
-        lambda = lambda + 3.5
-      }
+    if (timeDefesa.nome === NOME_TIME_JOGADOR) {
+      lambda =
+        lambda + MODIFICADORES_TATICA[tatica].golsAdversario
     }
 
-    if (lambda < 2) {
-      lambda = 2
+    if (lambda < LAMBDA_MINIMA) {
+      lambda = LAMBDA_MINIMA
     }
 
     return lambda
@@ -363,28 +477,10 @@ function TournamentSimulation({
     return texto.join(', ')
   }
 
-  function obterConfrontoMaquina(confrontoAtual) {
-    const timesDisponiveis = []
-
-    for (let i = 0; i < adversarios.length; i++) {
-      const nomeCasa = adversarios[i].nome
-
-      if (
-        nomeCasa !== confrontoAtual.timeCasa.nome &&
-        nomeCasa !== confrontoAtual.timeVisitante.nome
-      ) {
-        timesDisponiveis[timesDisponiveis.length] = adversarios[i]
-      }
-    }
-
-    return {
-      timeCasa: timesDisponiveis[0],
-      timeVisitante: timesDisponiveis[1],
-    }
-  }
-
   function iniciarPartida() {
-    const novaDuracao = Math.floor(Math.random() * 16) + 5
+    const novaDuracao =
+      Math.floor(Math.random() * VARIACAO_DURACAO_PARTIDA) +
+      DURACAO_MINIMA_PARTIDA
     let segundos = 0
     let golsDoTimeCasa = 0
     let golsDoTimeVisitante = 0
@@ -394,11 +490,11 @@ function TournamentSimulation({
     let indiceEventoCasa = -1
     let indiceEventoVisitante = -1
 
-    const confronto = confrontos[partidaAtual]
+    const rodada = confrontos[partidaAtual]
+    const confronto = rodada.jogos[0]
     const artilheirosCasa = obterArtilheiros(confronto.timeCasa)
     const artilheirosVisitante = obterArtilheiros(confronto.timeVisitante)
-    const confrontoMaquina =
-      obterConfrontoMaquina(confronto)
+    const confrontoMaquina = rodada.jogos[1]
     const timeCasaCalculado =
       obterTimeNaCurva(confronto.timeCasa)
     const timeVisitanteCalculado =
@@ -412,22 +508,26 @@ function TournamentSimulation({
       calcularLambda(
         timeCasaCalculado,
         timeVisitanteCalculado,
+        timeCasaCalculado,
       )
     const lambdaVisitante =
       calcularLambda(
         timeVisitanteCalculado,
         timeCasaCalculado,
+        timeCasaCalculado,
       )
     const lambdaMaquinaCasa =
-      12 +
-      (timeMaquinaCasaCalculado.ataque -
-        timeMaquinaVisitanteCalculado.defesa) *
-        0.35
+      calcularLambda(
+        timeMaquinaCasaCalculado,
+        timeMaquinaVisitanteCalculado,
+        timeMaquinaCasaCalculado,
+      )
     const lambdaMaquinaVisitante =
-      12 +
-      (timeMaquinaVisitanteCalculado.ataque -
-        timeMaquinaCasaCalculado.defesa) *
-        0.35
+      calcularLambda(
+        timeMaquinaVisitanteCalculado,
+        timeMaquinaCasaCalculado,
+        timeMaquinaCasaCalculado,
+      )
 
     golsDoTimeCasa =
       sortearPoisson(lambdaCasa)
@@ -477,14 +577,12 @@ function TournamentSimulation({
     setPomoMaquina('')
     setEventos([])
     setPartidaTerminada(false)
-    setCampeao('')
-
     let golsCasaExibidos = 0
     let golsVisitanteExibidos = 0
     let golsMaquinaCasaExibidos = 0
     let golsMaquinaVisitanteExibidos = 0
 
-    const cronometro = setInterval(() => {
+    const idCronometro = setInterval(() => {
       segundos = segundos + 1
 
       for (let i = 0; i < segundosCasa.length; i++) {
@@ -505,8 +603,7 @@ function TournamentSimulation({
             `${confronto.timeCasa.nome}: ` +
             formatarMarcadores(marcadoresCasa)
           setEventos([].concat(novosEventos))
-          setPontosCasaPartida(golsCasaExibidos * 10)
-          break
+          setPontosCasaPartida(golsCasaExibidos * GOALS_PER_GOAL)
         }
       }
 
@@ -529,8 +626,9 @@ function TournamentSimulation({
             `${confronto.timeVisitante.nome}: ` +
             formatarMarcadores(marcadoresVisitante)
           setEventos([].concat(novosEventos))
-          setPontosVisitantePartida(golsVisitanteExibidos * 10)
-          break
+          setPontosVisitantePartida(
+            golsVisitanteExibidos * GOALS_PER_GOAL,
+          )
         }
       }
 
@@ -539,8 +637,9 @@ function TournamentSimulation({
           golsMaquinaCasaExibidos =
             golsMaquinaCasaExibidos + 1
           setGolsMaquinaCasa(golsMaquinaCasaExibidos)
-          setPontosMaquinaCasa(golsMaquinaCasaExibidos * 10)
-          break
+          setPontosMaquinaCasa(
+            golsMaquinaCasaExibidos * GOALS_PER_GOAL,
+          )
         }
       }
 
@@ -552,14 +651,14 @@ function TournamentSimulation({
             golsMaquinaVisitanteExibidos,
           )
           setPontosMaquinaVisitante(
-            golsMaquinaVisitanteExibidos * 10,
+            golsMaquinaVisitanteExibidos * GOALS_PER_GOAL,
           )
-          break
         }
       }
 
       if (segundos >= novaDuracao) {
-        clearInterval(cronometro)
+        clearInterval(idCronometro)
+        setCronometro(null)
         setGolsCasa(golsDoTimeCasa)
         setGolsVisitante(golsDoTimeVisitante)
         setGolsMaquinaCasa(golsMaquinaCasa)
@@ -581,13 +680,13 @@ function TournamentSimulation({
         setEventos([].concat(novosEventos))
         setPartidaTerminada(true)
 
-        let pontosCasa = golsDoTimeCasa * 10
-        let pontosVisitante = golsDoTimeVisitante * 10
+        let pontosCasa = golsDoTimeCasa * GOALS_PER_GOAL
+        let pontosVisitante = golsDoTimeVisitante * GOALS_PER_GOAL
 
         if (capturou === confronto.timeCasa.nome) {
-          pontosCasa = pontosCasa + 150
+          pontosCasa = pontosCasa + PONTOS_POMO
         } else {
-          pontosVisitante = pontosVisitante + 150
+          pontosVisitante = pontosVisitante + PONTOS_POMO
         }
 
         setPontosCasaPartida(pontosCasa)
@@ -598,17 +697,17 @@ function TournamentSimulation({
           timeMaquinaVisitanteCalculado,
         )
 
-        let pontosMaquinaCasa = golsMaquinaCasa * 10
+        let pontosMaquinaCasa = golsMaquinaCasa * GOALS_PER_GOAL
         let pontosMaquinaVisitante =
-          golsMaquinaVisitante * 10
+          golsMaquinaVisitante * GOALS_PER_GOAL
 
         if (
           capturouMaquina === confrontoMaquina.timeCasa.nome
         ) {
-          pontosMaquinaCasa = pontosMaquinaCasa + 150
+          pontosMaquinaCasa = pontosMaquinaCasa + PONTOS_POMO
         } else {
           pontosMaquinaVisitante =
-            pontosMaquinaVisitante + 150
+            pontosMaquinaVisitante + PONTOS_POMO
         }
 
         setPontosMaquinaCasa(pontosMaquinaCasa)
@@ -616,58 +715,49 @@ function TournamentSimulation({
         setPomoMaquina(capturouMaquina)
         setMaquinaTerminada(true)
 
-        const novosPontos = []
+        setPontosTimes((pontosAtuais) => {
+          const novosPontos = []
 
-        for (let i = 0; i < pontosTimes.length; i++) {
-          novosPontos[i] = {
-            nome: pontosTimes[i].nome,
-            pontos: pontosTimes[i].pontos,
-          }
+          for (let i = 0; i < pontosAtuais.length; i++) {
+            novosPontos[i] = {
+              nome: pontosAtuais[i].nome,
+              pontos: pontosAtuais[i].pontos,
+            }
 
-          if (pontosTimes[i].nome === confronto.timeCasa.nome) {
-            novosPontos[i].pontos =
-              novosPontos[i].pontos + pontosCasa
-          }
+            if (pontosAtuais[i].nome === confronto.timeCasa.nome) {
+              novosPontos[i].pontos =
+                novosPontos[i].pontos + pontosCasa
+            }
 
-          if (pontosTimes[i].nome === confronto.timeVisitante.nome) {
-            novosPontos[i].pontos =
-              novosPontos[i].pontos + pontosVisitante
-          }
+            if (
+              pontosAtuais[i].nome === confronto.timeVisitante.nome
+            ) {
+              novosPontos[i].pontos =
+                novosPontos[i].pontos + pontosVisitante
+            }
 
-          if (
-            pontosTimes[i].nome ===
-            confrontoMaquina.timeCasa.nome
-          ) {
-            novosPontos[i].pontos =
-              novosPontos[i].pontos + pontosMaquinaCasa
-          }
+            if (
+              pontosAtuais[i].nome ===
+              confrontoMaquina.timeCasa.nome
+            ) {
+              novosPontos[i].pontos =
+                novosPontos[i].pontos + pontosMaquinaCasa
+            }
 
-          if (
-            pontosTimes[i].nome ===
-            confrontoMaquina.timeVisitante.nome
-          ) {
-            novosPontos[i].pontos =
-              novosPontos[i].pontos + pontosMaquinaVisitante
-          }
-        }
-
-        setPontosTimes(novosPontos)
-
-        if (partidaAtual === confrontos.length - 1) {
-          let maiorPontuacao = -1
-          let novoCampeao = ''
-
-          for (let i = 0; i < novosPontos.length; i++) {
-            if (novosPontos[i].pontos > maiorPontuacao) {
-              maiorPontuacao = novosPontos[i].pontos
-              novoCampeao = novosPontos[i].nome
+            if (
+              pontosAtuais[i].nome ===
+              confrontoMaquina.timeVisitante.nome
+            ) {
+              novosPontos[i].pontos =
+                novosPontos[i].pontos + pontosMaquinaVisitante
             }
           }
 
-          setCampeao(novoCampeao)
-        }
+          return novosPontos
+        })
       }
-    }, 1000)
+    }, INTERVALO_PARTIDA_MS)
+    setCronometro(idCronometro)
   }
 
   function iniciarProximaPartida() {
@@ -687,9 +777,9 @@ function TournamentSimulation({
     setPartidaTerminada(false)
   }
 
-  const confrontoAtual = confrontos[partidaAtual]
-  const confrontoMaquinaAtual =
-    obterConfrontoMaquina(confrontoAtual)
+  const rodadaAtual = confrontos[partidaAtual]
+  const confrontoAtual = rodadaAtual.jogos[0]
+  const confrontoMaquinaAtual = rodadaAtual.jogos[1]
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0b1511] px-5 py-8 text-stone-100 sm:px-8 lg:px-10">
@@ -708,7 +798,7 @@ function TournamentSimulation({
               Torneio
             </h1>
             <p className="mt-3 text-sm text-stone-400">
-              Partida {partidaAtual + 1} de {confrontos.length}
+              Rodada {partidaAtual + 1} de {confrontos.length}
             </p>
           </div>
 
@@ -736,7 +826,7 @@ function TournamentSimulation({
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
               <div>
                 <p className="text-xs uppercase tracking-widest text-amber-300/70">
-                  Partida {confrontoAtual.numero}
+                  Jogo {confrontoAtual.numero} da rodada
                 </p>
                 <h2 className="mt-2 font-serif text-2xl text-stone-100">
                   {confrontoAtual.timeCasa.nome}
@@ -778,7 +868,7 @@ function TournamentSimulation({
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-stone-500">
-                      Partida paralela das casas
+                      Outra partida da rodada
                     </p>
                     <p className="mt-1 font-serif text-lg text-stone-100">
                       {confrontoMaquinaAtual.timeCasa.nome}
@@ -789,12 +879,12 @@ function TournamentSimulation({
                   <p className="font-serif text-2xl text-amber-100">
                     {pontosMaquinaCasa > 0
                       ? pontosMaquinaCasa
-                      : golsMaquinaCasa * 10}
+                      : golsMaquinaCasa * GOALS_PER_GOAL}
                     {' '}
                     x{' '}
                     {pontosMaquinaVisitante > 0
                       ? pontosMaquinaVisitante
-                      : golsMaquinaVisitante * 10}
+                      : golsMaquinaVisitante * GOALS_PER_GOAL}
                   </p>
                 </div>
 
@@ -804,7 +894,7 @@ function TournamentSimulation({
                   </p>
                 ) : (
                   <p className="mt-3 text-xs text-stone-400">
-                    Simulação entre as equipes da máquina em andamento
+                    Partida em andamento
                   </p>
                 )}
               </div>
@@ -818,7 +908,7 @@ function TournamentSimulation({
                 <p className="mt-2 font-serif text-5xl text-amber-100">
                   {pontosCasaPartida > 0
                     ? pontosCasaPartida
-                    : golsCasa * 10}
+                    : golsCasa * GOALS_PER_GOAL}
                 </p>
                 <p className="mt-1 text-xs text-stone-500">
                   {golsCasa} {golsCasa === 1 ? 'gol' : 'gols'}
@@ -832,7 +922,7 @@ function TournamentSimulation({
                 <p className="mt-2 font-serif text-5xl text-amber-100">
                   {pontosVisitantePartida > 0
                     ? pontosVisitantePartida
-                    : golsVisitante * 10}
+                    : golsVisitante * GOALS_PER_GOAL}
                 </p>
                 <p className="mt-1 text-xs text-stone-400">
                   {golsVisitante} {golsVisitante === 1 ? 'gol' : 'gols'}
@@ -846,7 +936,7 @@ function TournamentSimulation({
                 className="mt-6 w-full cursor-pointer border border-amber-400 bg-amber-400 px-5 py-3 font-serif font-semibold uppercase tracking-widest text-[#211a14] transition hover:bg-amber-300"
                 onClick={iniciarPartida}
               >
-                Iniciar partida
+                Iniciar rodada
               </button>
             ) : null}
 
@@ -856,7 +946,7 @@ function TournamentSimulation({
                 className="mt-6 w-full cursor-pointer border border-amber-400 bg-amber-400 px-5 py-3 font-serif font-semibold uppercase tracking-widest text-[#211a14] transition hover:bg-amber-300"
                 onClick={iniciarProximaPartida}
               >
-                Próxima partida
+                Próxima rodada
               </button>
             ) : null}
 

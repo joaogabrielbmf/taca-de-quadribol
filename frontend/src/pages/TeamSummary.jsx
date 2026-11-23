@@ -9,7 +9,7 @@ const posicoes = [
 ]
 
 const coresPorCasa = {
-  Grifinoria: 'border-red-900/70 bg-[#241515]',
+  'Grifinória': 'border-red-900/70 bg-[#241515]',
   Sonserina: 'border-emerald-900/70 bg-[#101d18]',
   Corvinal: 'border-blue-900/70 bg-[#151b27]',
   'Lufa-Lufa': 'border-yellow-900/70 bg-[#241d12]',

@@ -2,11 +2,11 @@ import { useState } from 'react'
 
 // Lista dos jogadores disponíveis para a posição de goleiro.
 const goleiros = [
-  { id: 'oliver-wood', nome: 'Oliver Wood', iniciais: 'OW', casa: 'Grifinoria', forca: 93, velocidade: 77, habilidade: 84, sorte: 74 },
-  { id: 'ron-weasley', nome: 'Ron Weasley', iniciais: 'RW', casa: 'Grifinoria', forca: 82, velocidade: 85, habilidade: 79, sorte: 91 },
-  { id: 'cormac-mclaggen', nome: 'Cormac McLaggen', iniciais: 'CM', casa: 'Grifinoria', forca: 89, velocidade: 74, habilidade: 82, sorte: 71 },
+  { id: 'oliver-wood', nome: 'Oliver Wood', iniciais: 'OW', casa: 'Grifinória', forca: 93, velocidade: 77, habilidade: 84, sorte: 74 },
+  { id: 'ron-weasley', nome: 'Ron Weasley', iniciais: 'RW', casa: 'Grifinória', forca: 82, velocidade: 85, habilidade: 79, sorte: 91 },
+  { id: 'cormac-mclaggen', nome: 'Cormac McLaggen', iniciais: 'CM', casa: 'Grifinória', forca: 89, velocidade: 74, habilidade: 82, sorte: 71 },
   { id: 'miles-bletchley', nome: 'Miles Bletchley', iniciais: 'MB', casa: 'Sonserina', forca: 88, velocidade: 80, habilidade: 83, sorte: 76 },
-  { id: 'godofredo-hooper', nome: 'Godofredo Hooper', iniciais: 'GH', casa: 'Grifinoria', forca: 58, velocidade: 62, habilidade: 65, sorte: 42 },
+  { id: 'godofredo-hooper', nome: 'Godofredo Hooper', iniciais: 'GH', casa: 'Grifinória', forca: 58, velocidade: 62, habilidade: 65, sorte: 42 },
   { id: 'herbert-fleet', nome: 'Herbert Fleet', iniciais: 'HF', casa: 'Lufa-Lufa', forca: 71, velocidade: 63, habilidade: 67, sorte: 54 },
   { id: 'grant-page', nome: 'Grant Page', iniciais: 'GP', casa: 'Corvinal', forca: 66, velocidade: 70, habilidade: 72, sorte: 47 },
   { id: 'kevin-bletchley', nome: 'Kevin Bletchley', iniciais: 'KB', casa: 'Sonserina', forca: 68, velocidade: 64, habilidade: 70, sorte: 55 },
@@ -16,13 +16,13 @@ const goleiros = [
 
 // Lista dos jogadores disponíveis para as posições de batedor.
 const batedores = [
-  { id: 'fred-weasley', nome: 'Fred Weasley', iniciais: 'FW', casa: 'Grifinoria', forca: 91, velocidade: 86, habilidade: 85, sorte: 88 },
-  { id: 'george-weasley', nome: 'George Weasley', iniciais: 'GW', casa: 'Grifinoria', forca: 89, velocidade: 88, habilidade: 86, sorte: 87 },
-  { id: 'andrew-kirke', nome: 'Andrew Kirke', iniciais: 'AK', casa: 'Grifinoria', forca: 63, velocidade: 68, habilidade: 70, sorte: 59 },
-  { id: 'jack-sloper', nome: 'Jack Sloper', iniciais: 'JS', casa: 'Grifinoria', forca: 86, velocidade: 78, habilidade: 80, sorte: 75 },
-  { id: 'jimmy-peakes', nome: 'Jimmy Peakes', iniciais: 'JP', casa: 'Grifinoria', forca: 82, velocidade: 85, habilidade: 84, sorte: 80 },
-  { id: 'ritchie-coote', nome: 'Ritchie Coote', iniciais: 'RC', casa: 'Grifinoria', forca: 84, velocidade: 82, habilidade: 88, sorte: 77 },
-  { id: 'sirius-black', nome: 'Sirius Black', iniciais: 'SB', casa: 'Grifinoria', forca: 87, velocidade: 91, habilidade: 89, sorte: 84 },
+  { id: 'fred-weasley', nome: 'Fred Weasley', iniciais: 'FW', casa: 'Grifinória', forca: 91, velocidade: 86, habilidade: 85, sorte: 88 },
+  { id: 'george-weasley', nome: 'George Weasley', iniciais: 'GW', casa: 'Grifinória', forca: 89, velocidade: 88, habilidade: 86, sorte: 87 },
+  { id: 'andrew-kirke', nome: 'Andrew Kirke', iniciais: 'AK', casa: 'Grifinória', forca: 63, velocidade: 68, habilidade: 70, sorte: 59 },
+  { id: 'jack-sloper', nome: 'Jack Sloper', iniciais: 'JS', casa: 'Grifinória', forca: 86, velocidade: 78, habilidade: 80, sorte: 75 },
+  { id: 'jimmy-peakes', nome: 'Jimmy Peakes', iniciais: 'JP', casa: 'Grifinória', forca: 82, velocidade: 85, habilidade: 84, sorte: 80 },
+  { id: 'ritchie-coote', nome: 'Ritchie Coote', iniciais: 'RC', casa: 'Grifinória', forca: 84, velocidade: 82, habilidade: 88, sorte: 77 },
+  { id: 'sirius-black', nome: 'Sirius Black', iniciais: 'SB', casa: 'Grifinória', forca: 87, velocidade: 91, habilidade: 89, sorte: 84 },
   { id: 'gwenog-jones', nome: 'Gwenog Jones', iniciais: 'GJ', casa: 'Lufa-Lufa', forca: 92, velocidade: 85, habilidade: 90, sorte: 83 },
   { id: 'maxine-o-flaherty', nome: "Maxine O'Flaherty", iniciais: 'MO', casa: 'Lufa-Lufa', forca: 55, velocidade: 63, habilidade: 72, sorte: 61 },
   { id: 'anthony-rickett', nome: 'Anthony Rickett', iniciais: 'AR', casa: 'Lufa-Lufa', forca: 69, velocidade: 67, habilidade: 58, sorte: 55 },
@@ -36,14 +36,14 @@ const batedores = [
 
 // Lista dos jogadores disponíveis para as posições de artilheiro.
 const artilheiros = [
-  { id: 'james-potter', nome: 'James Potter', iniciais: 'JP', casa: 'Grifinoria', forca: 90, velocidade: 93, habilidade: 91, sorte: 87 },
-  { id: 'angelina-johnson', nome: 'Angelina Johnson', iniciais: 'AJ', casa: 'Grifinoria', forca: 84, velocidade: 91, habilidade: 93, sorte: 82 },
-  { id: 'alicia-spinnet', nome: 'Alicia Spinnet', iniciais: 'AS', casa: 'Grifinoria', forca: 80, velocidade: 89, habilidade: 91, sorte: 84 },
-  { id: 'katie-bell', nome: 'Katie Bell', iniciais: 'KB', casa: 'Grifinoria', forca: 83, velocidade: 90, habilidade: 89, sorte: 86 },
-  { id: 'ginny-weasley', nome: 'Ginny Weasley', iniciais: 'GW', casa: 'Grifinoria', forca: 89, velocidade: 94, habilidade: 92, sorte: 88 },
-  { id: 'demelza-robins', nome: 'Demelza Robins', iniciais: 'DR', casa: 'Grifinoria', forca: 80, velocidade: 87, habilidade: 85, sorte: 82 },
-  { id: 'dean-thomas', nome: 'Dean Thomas', iniciais: 'DT', casa: 'Grifinoria', forca: 57, velocidade: 66, habilidade: 62, sorte: 61 },
-  { id: 'rose-weasley', nome: 'Rose Weasley', iniciais: 'RW', casa: 'Grifinoria', forca: 60, velocidade: 71, habilidade: 64, sorte: 69 },
+  { id: 'james-potter', nome: 'James Potter', iniciais: 'JP', casa: 'Grifinória', forca: 90, velocidade: 93, habilidade: 91, sorte: 87 },
+  { id: 'angelina-johnson', nome: 'Angelina Johnson', iniciais: 'AJ', casa: 'Grifinória', forca: 84, velocidade: 91, habilidade: 93, sorte: 82 },
+  { id: 'alicia-spinnet', nome: 'Alicia Spinnet', iniciais: 'AS', casa: 'Grifinória', forca: 80, velocidade: 89, habilidade: 91, sorte: 84 },
+  { id: 'katie-bell', nome: 'Katie Bell', iniciais: 'KB', casa: 'Grifinória', forca: 83, velocidade: 90, habilidade: 89, sorte: 86 },
+  { id: 'ginny-weasley', nome: 'Ginny Weasley', iniciais: 'GW', casa: 'Grifinória', forca: 89, velocidade: 94, habilidade: 92, sorte: 88 },
+  { id: 'demelza-robins', nome: 'Demelza Robins', iniciais: 'DR', casa: 'Grifinória', forca: 80, velocidade: 87, habilidade: 85, sorte: 82 },
+  { id: 'dean-thomas', nome: 'Dean Thomas', iniciais: 'DT', casa: 'Grifinória', forca: 57, velocidade: 66, habilidade: 62, sorte: 61 },
+  { id: 'rose-weasley', nome: 'Rose Weasley', iniciais: 'RW', casa: 'Grifinória', forca: 60, velocidade: 71, habilidade: 64, sorte: 69 },
   { id: 'marcus-flint', nome: 'Marcus Flint', iniciais: 'MF', casa: 'Sonserina', forca: 93, velocidade: 77, habilidade: 84, sorte: 74 },
   { id: 'adrian-pucey', nome: 'Adrian Pucey', iniciais: 'AP', casa: 'Sonserina', forca: 86, velocidade: 88, habilidade: 87, sorte: 79 },
   { id: 'cassius-warrington', nome: 'Cassius Warrington', iniciais: 'CW', casa: 'Sonserina', forca: 90, velocidade: 82, habilidade: 86, sorte: 78 },
@@ -65,14 +65,14 @@ const artilheiros = [
 
 // Lista dos jogadores disponíveis para a posição de apanhador.
 const apanhadores = [
-  { id: 'harry-potter', nome: 'Harry Potter', iniciais: 'HP', casa: 'Grifinoria', forca: 86, velocidade: 98, habilidade: 94, sorte: 97 },
-  { id: 'minerva-mcgonagall', nome: 'Minerva McGonagall', iniciais: 'MM', casa: 'Grifinoria', forca: 86, velocidade: 88, habilidade: 94, sorte: 82 },
-  { id: 'charlie-weasley', nome: 'Charlie Weasley', iniciais: 'CW', casa: 'Grifinoria', forca: 88, velocidade: 84, habilidade: 88, sorte: 86 },
+  { id: 'harry-potter', nome: 'Harry Potter', iniciais: 'HP', casa: 'Grifinória', forca: 86, velocidade: 98, habilidade: 94, sorte: 97 },
+  { id: 'minerva-mcgonagall', nome: 'Minerva McGonagall', iniciais: 'MM', casa: 'Grifinória', forca: 86, velocidade: 88, habilidade: 94, sorte: 82 },
+  { id: 'charlie-weasley', nome: 'Charlie Weasley', iniciais: 'CW', casa: 'Grifinória', forca: 88, velocidade: 84, habilidade: 88, sorte: 86 },
   { id: 'cedrico-diggory', nome: 'Cedrico Diggory', iniciais: 'CD', casa: 'Lufa-Lufa', forca: 88, velocidade: 89, habilidade: 93, sorte: 88 },
   { id: 'cho-chang', nome: 'Cho Chang', iniciais: 'CC', casa: 'Corvinal', forca: 80, velocidade: 94, habilidade: 92, sorte: 86 },
   { id: 'viktor-krum', nome: 'Viktor Krum', iniciais: 'VK', casa: 'Durmstrang', forca: 94, velocidade: 96, habilidade: 95, sorte: 85 },
   { id: 'draco-malfoy', nome: 'Draco Malfoy', iniciais: 'DM', casa: 'Sonserina', forca: 82, velocidade: 90, habilidade: 88, sorte: 80 },
-  { id: 'ginny-weasley-apanhadora', nome: 'Ginny Weasley', iniciais: 'GW', casa: 'Grifinoria', forca: 89, velocidade: 94, habilidade: 92, sorte: 88 },
+  { id: 'ginny-weasley-apanhadora', nome: 'Ginny Weasley', iniciais: 'GW', casa: 'Grifinória', forca: 89, velocidade: 94, habilidade: 92, sorte: 88 },
   { id: 'regulus-black', nome: 'Regulus Black', iniciais: 'RB', casa: 'Sonserina', forca: 84, velocidade: 91, habilidade: 89, sorte: 86 },
   { id: 'terence-higgs', nome: 'Terence Higgs', iniciais: 'TH', casa: 'Sonserina', forca: 60, velocidade: 66, habilidade: 62, sorte: 55 },
   { id: 'summerby', nome: 'Summerby', iniciais: 'SU', casa: 'Lufa-Lufa', forca: 64, velocidade: 67, habilidade: 69, sorte: 58 },
@@ -155,7 +155,7 @@ const etapas = [
 
 // Define as cores do cartão e da faixa superior de acordo com a casa do jogador.
 const coresPorCasa = {
-  Grifinoria: {
+  'Grifinória': {
     cartao: 'border-red-900/70 bg-[#241515]',
     faixa: 'bg-gradient-to-br from-red-900 to-[#251515]',
   },
