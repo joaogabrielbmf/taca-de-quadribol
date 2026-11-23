@@ -154,6 +154,42 @@ function gerarCalendario(equipes) {
   return calendario
 }
 
+function sortearMomentosDosGols(golsCasa, golsVisitante, duracaoMinima) {
+  const duracao = Math.max(
+    duracaoMinima,
+    golsCasa + golsVisitante,
+  )
+  const momentos = []
+
+  for (let i = 1; i <= duracao; i++) {
+    momentos[momentos.length] = i
+  }
+
+  for (let i = momentos.length - 1; i > 0; i--) {
+    const indiceAleatorio = Math.floor(Math.random() * (i + 1))
+    const momentoTemporario = momentos[i]
+    momentos[i] = momentos[indiceAleatorio]
+    momentos[indiceAleatorio] = momentoTemporario
+  }
+
+  const segundosCasa = []
+  const segundosVisitante = []
+
+  for (let i = 0; i < golsCasa; i++) {
+    segundosCasa[i] = momentos[i]
+  }
+
+  for (let i = 0; i < golsVisitante; i++) {
+    segundosVisitante[i] = momentos[golsCasa + i]
+  }
+
+  return {
+    duracao: duracao,
+    segundosCasa: segundosCasa,
+    segundosVisitante: segundosVisitante,
+  }
+}
+
 function TournamentSimulation({
   mediaTime,
   tatica,
@@ -538,33 +574,27 @@ function TournamentSimulation({
     let golsMaquinaVisitante =
       sortearPoisson(lambdaMaquinaVisitante)
 
-    const segundosCasa = []
-    const segundosVisitante = []
-    const segundosMaquinaCasa = []
-    const segundosMaquinaVisitante = []
+    const momentosPartida = sortearMomentosDosGols(
+      golsDoTimeCasa,
+      golsDoTimeVisitante,
+      novaDuracao,
+    )
+    const momentosPartidaMaquina = sortearMomentosDosGols(
+      golsMaquinaCasa,
+      golsMaquinaVisitante,
+      novaDuracao,
+    )
+    const duracaoFinal = Math.max(
+      momentosPartida.duracao,
+      momentosPartidaMaquina.duracao,
+    )
+    const segundosCasa = momentosPartida.segundosCasa
+    const segundosVisitante = momentosPartida.segundosVisitante
+    const segundosMaquinaCasa = momentosPartidaMaquina.segundosCasa
+    const segundosMaquinaVisitante =
+      momentosPartidaMaquina.segundosVisitante
 
-    for (let i = 0; i < golsDoTimeCasa; i++) {
-      segundosCasa[segundosCasa.length] =
-        Math.floor(Math.random() * novaDuracao) + 1
-    }
-
-    for (let i = 0; i < golsDoTimeVisitante; i++) {
-      segundosVisitante[segundosVisitante.length] =
-        Math.floor(Math.random() * novaDuracao) + 1
-    }
-
-    for (let i = 0; i < golsMaquinaCasa; i++) {
-      segundosMaquinaCasa[segundosMaquinaCasa.length] =
-        Math.floor(Math.random() * novaDuracao) + 1
-    }
-
-    for (let i = 0; i < golsMaquinaVisitante; i++) {
-      segundosMaquinaVisitante[
-        segundosMaquinaVisitante.length
-      ] = Math.floor(Math.random() * novaDuracao) + 1
-    }
-
-    setDuracaoPartida(novaDuracao)
+    setDuracaoPartida(duracaoFinal)
     setGolsCasa(0)
     setGolsVisitante(0)
     setPontosCasaPartida(0)
@@ -656,7 +686,7 @@ function TournamentSimulation({
         }
       }
 
-      if (segundos >= novaDuracao) {
+      if (segundos >= duracaoFinal) {
         clearInterval(idCronometro)
         setCronometro(null)
         setGolsCasa(golsDoTimeCasa)
